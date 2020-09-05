@@ -1,0 +1,6 @@
+get-box BOARD
+M:	Rich Thanki <rich@janga.la>
+S:	Maintained
+F:	board/jangala/get-box/
+F:	include/configs/get-box.h
+F:	configs/get-box_defconfig
