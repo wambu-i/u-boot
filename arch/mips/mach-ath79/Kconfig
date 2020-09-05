@@ -57,6 +57,10 @@ config TARGET_AP152
 	bool "AP152 Reference Board"
 	select SOC_QCA956X
 
+config TARGET_GET_BOX
+	bool "Jangala Get Box Board"
+	select SOC_QCA953X
+
 config BOARD_TPLINK_WDR4300
 	bool "TP-Link WDR4300 Board"
 	select SOC_AR934X
@@ -66,6 +70,7 @@ endchoice
 source "board/qca/ap121/Kconfig"
 source "board/qca/ap143/Kconfig"
 source "board/qca/ap152/Kconfig"
+source "board/jangala/get-box/Kconfig"
 source "board/tplink/wdr4300/Kconfig"
 
 endmenu
