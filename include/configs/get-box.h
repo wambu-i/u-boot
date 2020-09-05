@@ -32,7 +32,7 @@
 
 #define CONFIG_BOOTCOMMAND              "sf probe;" \
 					"mtdparts default;" \
-					"bootm 0x9f050000 || bootm 0x9f800000"
+					"bootm 0x9F050000 || bootm 0x9F800000 || bootm 0x9FE80000"
 
 /* Miscellaneous configurable options */
 
