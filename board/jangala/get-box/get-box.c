@@ -2,16 +2,36 @@
 /*
  * Copyright (C) 2015-2016 Wills Wang <wills.wang@live.com>
  */
-
 #include <common.h>
 #include <init.h>
 #include <asm/io.h>
 #include <asm/addrspace.h>
 #include <asm/types.h>
+#include <linux/bitops.h>
+#include <linux/delay.h>
+#include <mach/ath79.h>
 #include <mach/ar71xx_regs.h>
 #include <mach/ddr.h>
-#include <mach/ath79.h>
 #include <debug_uart.h>
+
+#ifdef CONFIG_USB
+static void get_box_usb_start(void)
+{
+	void __iomem *gpio_regs = map_physmem(AR71XX_GPIO_BASE,
+					      AR71XX_GPIO_SIZE, MAP_NOCACHE);
+	if (!gpio_regs)
+		return;
+
+	/* Power up the USB HUB. */
+	clrbits_be32(gpio_regs + AR71XX_GPIO_REG_OE, BIT(21) | BIT(22));
+	writel(BIT(21) | BIT(22), gpio_regs + AR71XX_GPIO_REG_SET);
+	mdelay(1);
+
+	ath79_usb_reset();
+}
+#else
+static inline void get_box_usb_start(void) {}
+#endif
 
 #ifdef CONFIG_DEBUG_UART_BOARD_INIT
 void board_debug_uart_init(void)
@@ -58,6 +78,7 @@ void board_debug_uart_init(void)
 int board_early_init_f(void)
 {
 	ddr_init();
+	get_box_usb_start();
 	ath79_eth_reset();
 	return 0;
 }
