@@ -5,6 +5,8 @@
  */
 
 #include <common.h>
+#include <log.h>
+#include <clock_legacy.h>
 #include <linux/bitops.h>
 #include <linux/delay.h>
 #include <linux/errno.h>
@@ -476,17 +478,44 @@ static int usb_reset_ar934x(void __iomem *reset_regs)
 	return 0;
 }
 
+#define BITS(_start, _bits)							(((1 << (_bits)) - 1) << _start)
+#define QCA953X_PLL_SWITCH_CLK_CTRL_USB_CLK_SEL_MASK				BITS(8, 4)
+#define qca_soc_reg_write(_addr, _val)	\
+	((*(volatile unsigned int *)KSEG1ADDR(_addr)) = (_val))
+#define qca_soc_reg_read(_addr)		\
+	*(volatile unsigned int *)(KSEG1ADDR(_addr))
 static int usb_reset_qca953x(void __iomem *reset_regs)
 {
+	u32 val;
 	void __iomem *pregs = map_physmem(AR71XX_PLL_BASE, AR71XX_PLL_SIZE,
 					  MAP_NOCACHE);
 
-	clrsetbits_be32(pregs + QCA953X_PLL_SWITCH_CLOCK_CONTROL_REG,
+	if (soc_is_qca953x()) {
+		log_info("Checking serial clock.\n");
+		val = qca_soc_reg_read(pregs + QCA953X_PLL_SWITCH_CLOCK_CONTROL_REG);
+		val &= ~QCA953X_PLL_SWITCH_CLK_CTRL_USB_CLK_SEL_MASK;
+
+		if (get_serial_clock() == 40000000) {
+			printf("Serial clock is 40MHz\n");
+			val |= (0x5 << 8);
+		}
+		else {
+			log_info("Serial clock is 25MHz\n");
+			val |= (0x2 << 8);
+		}
+		log_info("Writing %u value to register.\n", val);
+		qca_soc_reg_write(pregs + QCA953X_PLL_SWITCH_CLOCK_CONTROL_REG, val);
+		//setbits_be32(pregs + QCA953X_PLL_SWITCH_CLOCK_CONTROL_REG, val);
+		mdelay(10);
+	}
+
+	/* clrsetbits_be32(pregs + QCA953X_PLL_SWITCH_CLOCK_CONTROL_REG,
 			0xf00, 0x200);
 	mdelay(10);
+	*/
 
 	/* Ungate the USB block */
-	setbits_be32(reset_regs + QCA953X_RESET_REG_RESET_MODULE,
+	clrbits_be32(reset_regs + QCA953X_RESET_REG_RESET_MODULE,
 		     QCA953X_RESET_USBSUS_OVERRIDE);
 	mdelay(1);
 	clrbits_be32(reset_regs + QCA953X_RESET_REG_RESET_MODULE,
@@ -527,5 +556,6 @@ int ath79_usb_reset(void)
 	if (soc_is_qca953x())
 		return usb_reset_qca953x(reset_regs);
 
+	log_err("board info could not be found\n");
 	return -EINVAL;
 }
