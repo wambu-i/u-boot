@@ -41,6 +41,9 @@
 		reg = <0>;
 	};
 };
+&ehci0 {
+	status = "okay";
+};
 
 &gmac1 {
 	status = "okay";
