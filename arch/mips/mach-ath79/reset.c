@@ -478,15 +478,6 @@ static int usb_reset_ar934x(void __iomem *reset_regs)
 	return 0;
 }
 
-#define BITS(_start, _bits)							(((1 << (_bits)) - 1) << _start)
-#define QCA953X_PLL_SWITCH_CLK_CTRL_USB_CLK_SEL_MASK				BITS(8, 4)
-#define qca_soc_reg_write(_addr, _val)	\
-	((*(volatile unsigned int *)KSEG1ADDR(_addr)) = (_val))
-#define qca_soc_reg_read(_addr)		\
-	*(volatile unsigned int *)(KSEG1ADDR(_addr))
-#define AR71XX_USB_RESET_MASK   (AR71XX_RESET_USB_HOST | \
-                                 AR71XX_RESET_USB_PHY | \
-                                 AR71XX_RESET_USB_OHCI_DLL)
 static int usb_reset_qca953x(void __iomem *reset_regs)
 {
 	u32 bootstrap;
