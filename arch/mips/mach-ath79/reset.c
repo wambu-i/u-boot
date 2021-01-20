@@ -481,14 +481,22 @@ static int usb_reset_ar934x(void __iomem *reset_regs)
 static int usb_reset_qca953x(void __iomem *reset_regs)
 {
 	u32 bootstrap;
-
 	void __iomem *pregs = map_physmem(AR71XX_PLL_BASE, AR71XX_PLL_SIZE,
 					  MAP_NOCACHE);
 
-	bootstrap = readl(reset_regs + QCA953X_RESET_REG_BOOTSTRAP);
-	clrsetbits_be32(pregs + QCA953X_PLL_SWITCH_CLOCK_CONTROL_REG,
+	bootstrap = ath79_get_bootstrap();
+
+	if (bootstrap & QCA953X_BOOTSTRAP_REF_CLK_40) {
+		log_info("Serial clock is 40MHz\n");
+		clrsetbits_be32(pregs + QCA953X_PLL_SWITCH_CLOCK_CONTROL_REG,
                         0xf00, 0x200);
-        mdelay(10);
+	}
+	else {
+		log_info("Serial clock is 25MHz\n");
+		clrsetbits_be32(pregs + QCA953X_PLL_SWITCH_CLOCK_CONTROL_REG,
+                        0xf00, 0x500);
+	}
+	mdelay(10);
 
 	/* Ungate the USB block */
 	setbits_be32(reset_regs + QCA953X_RESET_REG_RESET_MODULE,
@@ -533,6 +541,5 @@ int ath79_usb_reset(void)
 	if (soc_is_qca953x())
 		return usb_reset_qca953x(reset_regs);
 
-	log_err("board info could not be found\n");
 	return -EINVAL;
 }
