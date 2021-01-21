@@ -481,21 +481,25 @@ static int usb_reset_ar934x(void __iomem *reset_regs)
 static int usb_reset_qca953x(void __iomem *reset_regs)
 {
 	u32 bootstrap;
+	u32 val;
 	void __iomem *pregs = map_physmem(AR71XX_PLL_BASE, AR71XX_PLL_SIZE,
 					  MAP_NOCACHE);
 
-	bootstrap = ath79_get_bootstrap();
+	val = readl(pregs + QCA953X_PLL_SWITCH_CLOCK_CONTROL_REG);
+	val &= ~(((1 << (8)) - 1) << 4);
 
+	bootstrap = ath79_get_bootstrap();
 	if (bootstrap & QCA953X_BOOTSTRAP_REF_CLK_40) {
 		log_info("Serial clock is 40MHz\n");
-		clrsetbits_be32(pregs + QCA953X_PLL_SWITCH_CLOCK_CONTROL_REG,
-                        0xf00, 0x200);
+		val |= (0x5 << 8);
 	}
 	else {
 		log_info("Serial clock is 25MHz\n");
-		clrsetbits_be32(pregs + QCA953X_PLL_SWITCH_CLOCK_CONTROL_REG,
-                        0xf00, 0x500);
+		val |= (0x2 << 8);
 	}
+
+	log_info("Writing %u value to register.\n", val);
+	writel(val, pregs + QCA953X_PLL_SWITCH_CLOCK_CONTROL_REG);
 	mdelay(10);
 
 	/* Ungate the USB block */
@@ -531,8 +535,8 @@ int ath79_usb_reset(void)
 	 * NOTE: This write into an undocumented register in mandatory to
 	 *       get the USB controller operational in BigEndian mode.
 	 */
-	writel(0xf0000, usbc_regs + AR71XX_USB_CTRL_REG_CONFIG);
-	writel(0x20c00, usbc_regs + AR71XX_USB_CTRL_REG_FLADJ);
+	//writel(0x0001d, usbc_regs + AR71XX_USB_CTRL_REG_CONFIG);
+	//writel(0x20c00, usbc_regs + AR71XX_USB_CTRL_REG_FLADJ);
 
 	if (soc_is_ar933x())
 		return usb_reset_ar933x(reset_regs);

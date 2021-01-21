@@ -22,7 +22,6 @@ static void get_box_usb_start(void)
 	if (!gpio_regs)
 		return;
 
-	/* Power up the USB HUB. */
 	clrbits_be32(gpio_regs + AR71XX_GPIO_REG_OE, BIT(21) | BIT(22));
 	writel(BIT(21) | BIT(22), gpio_regs + AR71XX_GPIO_REG_SET);
 	mdelay(1);
