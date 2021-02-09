@@ -4,6 +4,7 @@
  */
 #include <common.h>
 #include <init.h>
+#include <log.h>
 #include <asm/io.h>
 #include <asm/addrspace.h>
 #include <asm/types.h>
@@ -14,23 +15,29 @@
 #include <mach/ddr.h>
 #include <debug_uart.h>
 
-#ifdef CONFIG_USB
 static void get_box_usb_start(void)
 {
-	void __iomem *gpio_regs = map_physmem(AR71XX_GPIO_BASE,
-					      AR71XX_GPIO_SIZE, MAP_NOCACHE);
-	if (!gpio_regs)
-		return;
+	u32 bootstrap;
+	u32 val;
+	void __iomem *pregs = map_physmem(AR71XX_PLL_BASE, AR71XX_PLL_SIZE,
+					  MAP_NOCACHE);
 
-	clrbits_be32(gpio_regs + AR71XX_GPIO_REG_OE, BIT(21) | BIT(22));
-	writel(BIT(21) | BIT(22), gpio_regs + AR71XX_GPIO_REG_SET);
-	mdelay(1);
+	val = readl(pregs + QCA953X_PLL_SWITCH_CLOCK_CONTROL_REG);
+	val &= ~(((1 << (8)) - 1) << 4);
 
-	ath79_usb_reset();
+	bootstrap = ath79_get_bootstrap();
+	if (bootstrap & QCA953X_BOOTSTRAP_REF_CLK_40) {
+		log_info("Serial clock is 40MHz\n");
+		val |= (0x5 << 8);
+	}
+	else {
+		log_info("Serial clock is 25MHz\n");
+		val |= (0x2 << 8);
+	}
+	log_info("Writing %u value to register.\n", val);
+	writel(val, pregs + QCA953X_PLL_SWITCH_CLOCK_CONTROL_REG);
+	mdelay(10);
 }
-#else
-static inline void get_box_usb_start(void) {}
-#endif
 
 #ifdef CONFIG_DEBUG_UART_BOARD_INIT
 void board_debug_uart_init(void)
@@ -77,7 +84,8 @@ void board_debug_uart_init(void)
 int board_early_init_f(void)
 {
 	ddr_init();
-	get_box_usb_start();
 	ath79_eth_reset();
+	get_box_usb_start();
+	//ath79_eth_reset();
 	return 0;
 }
