@@ -17,23 +17,10 @@
 
 static void get_box_usb_start(void)
 {
-	u32 bootstrap;
-	u32 val;
+	u32 val = 561;
 	void __iomem *pregs = map_physmem(AR71XX_PLL_BASE, AR71XX_PLL_SIZE,
 					  MAP_NOCACHE);
 
-	val = readl(pregs + QCA953X_PLL_SWITCH_CLOCK_CONTROL_REG);
-	val &= ~(((1 << (8)) - 1) << 4);
-
-	bootstrap = ath79_get_bootstrap();
-	if (bootstrap & QCA953X_BOOTSTRAP_REF_CLK_40) {
-		log_info("Serial clock is 40MHz\n");
-		val |= (0x5 << 8);
-	}
-	else {
-		log_info("Serial clock is 25MHz\n");
-		val |= (0x2 << 8);
-	}
 	log_info("Writing %u value to register.\n", val);
 	writel(val, pregs + QCA953X_PLL_SWITCH_CLOCK_CONTROL_REG);
 	mdelay(10);
@@ -84,8 +71,7 @@ void board_debug_uart_init(void)
 int board_early_init_f(void)
 {
 	ddr_init();
-	ath79_eth_reset();
 	get_box_usb_start();
-	//ath79_eth_reset();
+	ath79_eth_reset();
 	return 0;
 }
